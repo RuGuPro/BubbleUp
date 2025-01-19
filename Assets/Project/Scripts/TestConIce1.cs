@@ -8,22 +8,24 @@ public class TestConIce1 : MonoBehaviour
 {
     [HideInInspector]
     public GameManager GameManager;
+    public Transform cameraTra;
     public float acceleration = 80;
     public float kickAcceleration = 10.0f;
     bool isLock = false;
+    bool isTongLock = false;
 
     ObiSoftbody softbody;
 
     void Start()
     {
         GameManager = GameObject.Find("GameManager").GetComponent<GameManager>();
-
+        cameraTra = GameManager.Camera;
         GameManager.WaitTimeEvent(0.1f, this.gameObject, (obj) =>
         {
             softbody = GetComponent<ObiSoftbody>();
             softbody.enabled = true;
             GetComponent<ObiSoftbodySkinner>().enabled = true;
-            GameManager.CreatChangeEffect();
+            GameManager.CreatChangeEffect("ChangeIce");
             softbody.solver.OnCollision += Solver_OnCollision;
         });
 
@@ -46,19 +48,19 @@ public class TestConIce1 : MonoBehaviour
 
         if (Input.GetKey(KeyCode.W))
         {
-            direction += Vector3.forward;
+            direction += cameraTra.forward;
         }
         if (Input.GetKey(KeyCode.A))
         {
-            direction += -Vector3.right;
+            direction += -cameraTra.right;
         }
         if (Input.GetKey(KeyCode.S))
         {
-            direction += -Vector3.forward;
+            direction += -cameraTra.forward;
         }
         if (Input.GetKey(KeyCode.D))
         {
-            direction += Vector3.right;
+            direction += cameraTra.right;
         }
 
         direction.y = 0;
@@ -86,6 +88,11 @@ public class TestConIce1 : MonoBehaviour
         });
     }
 
+    public void Wait2()
+    {
+        isTongLock = false;
+    }
+
     private void Solver_OnCollision(ObiSolver solver, ObiSolver.ObiCollisionEventArgs e)
     {
         var world = ObiColliderWorld.GetInstance();
@@ -95,14 +102,42 @@ public class TestConIce1 : MonoBehaviour
             {
                 var col = world.colliderHandles[contact.bodyB].owner;
 
-                if (col.gameObject.tag == "Ice")
+                if (col.gameObject.name == "tishi1")
+                {
+                    CanvasLevel1Scr.Instance.show(0);
+                }
+                else if (col.gameObject.name == "tishi2")
+                {
+                    CanvasLevel1Scr.Instance.show(1);
+                }
+                else if (col.gameObject.name == "tishi3")
+                {
+                    CanvasLevel1Scr.Instance.show(2);
+                }
+                else if (col.gameObject.name == "tishi4")
+                {
+                    CanvasLevel1Scr.Instance.show(3);
+                }
+                else if (col.gameObject.name == "tishi5")
+                {
+                    CanvasLevel1Scr.Instance.show(4);
+                }
+
+                if (col.gameObject.tag == "Barrel" && !isTongLock)
+                {
+                    ManagerEventCon.BroadCast(ProEventType.SoundEffects, "×²»÷Ä¾Í°");
+                    isTongLock = true;
+                    Invoke("Wait2", 2.0f);
+                }
+
+                if (col.gameObject.layer == LayerMask.NameToLayer("Ice"))
                 {
                     if (GameManager.curPlayerType == PlayerType.Ball)
                         ManagerEventCon.BroadCast(ProEventType.ChangeType, PlayerType.Ice);
                     return;
                 }
 
-                if (col.gameObject.tag == "Fire")
+                if (col.gameObject.layer == LayerMask.NameToLayer("Fire"))
                 {
                     if (GameManager.curPlayerType == PlayerType.Ice)
                         ManagerEventCon.BroadCast(ProEventType.ChangeType, PlayerType.Ball);

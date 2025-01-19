@@ -9,6 +9,7 @@ public class TestConBall1 : MonoBehaviour
 {
     [HideInInspector]
     public GameManager GameManager;
+    public Transform cameraTra;
     public float acceleration = 80;
     public float jumpPower = 1;
 
@@ -18,14 +19,16 @@ public class TestConBall1 : MonoBehaviour
     ObiSoftbody softbody;
     bool onGround = false;
     bool isLock = false;
+    bool isTongLock = false;
 
     void Start()
     {
         GameManager = GameObject.Find("GameManager").GetComponent<GameManager>();
-        if (GameManager.startPos)
+        cameraTra = GameManager.Camera;
+        if (GameManager.isFirst)
         {
+            GameManager.isFirst = false;
             this.gameObject.transform.position = GameManager.startPos.position;
-            GameManager.startPos = null;
         }
 
         GameManager.WaitTimeEvent(0.1f, this.gameObject, (obj) =>
@@ -35,7 +38,7 @@ public class TestConBall1 : MonoBehaviour
             GetComponent<ObiSoftbodySkinner>().enabled = true;
             softbody.solver.OnCollision += Solver_OnCollision;
 
-            GameManager.CreatChangeEffect();
+            GameManager.CreatChangeEffect("ChangeBall");
         });
 
         closeEvent();
@@ -48,7 +51,7 @@ public class TestConBall1 : MonoBehaviour
 
     void Update()
     {
-        if (!softbody || isLock)
+        if (!softbody || isLock || cameraTra ==null)
         {
             return;
         }
@@ -57,19 +60,19 @@ public class TestConBall1 : MonoBehaviour
         // Determine movement direction:
         if (Input.GetKey(KeyCode.W))
         {
-            direction += Vector3.forward * acceleration;
+            direction += cameraTra.forward * acceleration;
         }
         if (Input.GetKey(KeyCode.A))
         {
-            direction += -Vector3.right * acceleration;
+            direction += -cameraTra.right * acceleration;
         }
         if (Input.GetKey(KeyCode.S))
         {
-            direction += -Vector3.forward * acceleration;
+            direction += -cameraTra.forward * acceleration;
         }
         if (Input.GetKey(KeyCode.D))
         {
-            direction += Vector3.right * acceleration;
+            direction += cameraTra.right * acceleration;
         }
 
         // flatten out the direction so that it's parallel to the ground:
@@ -86,6 +89,7 @@ public class TestConBall1 : MonoBehaviour
         // jump:
         if (onGround && Input.GetKeyDown(KeyCode.Space))
         {
+            ManagerEventCon.BroadCast(ProEventType.SoundEffects, "Ë®µÎµ¯Ìø");
             onGround = false;
             softbody.AddForce(Vector3.up * jumpPower, ForceMode.VelocityChange);
         }
@@ -101,25 +105,59 @@ public class TestConBall1 : MonoBehaviour
             if (contact.distance > 0.01)
             {
                 var col = world.colliderHandles[contact.bodyB].owner;
+
+                if (col.gameObject.name == "tishi1")
+                {
+                    CanvasLevel1Scr.Instance.show(0);
+                }
+                else if (col.gameObject.name == "tishi2")
+                {
+                    CanvasLevel1Scr.Instance.show(1);
+                }
+                else if (col.gameObject.name == "tishi3")
+                {
+                    CanvasLevel1Scr.Instance.show(2);
+                }
+                else if (col.gameObject.name == "tishi4")
+                {
+                    CanvasLevel1Scr.Instance.show(3);
+                }
+                else if (col.gameObject.name == "tishi5")
+                {
+                    CanvasLevel1Scr.Instance.show(4);
+                }
+
+                if (col.gameObject.tag == "Barrel" && !isTongLock)
+                {
+                    ManagerEventCon.BroadCast(ProEventType.SoundEffects, "×²»÷Ä¾Í°");
+                    isTongLock = true;
+                    Invoke("Wait2", 2.0f);
+                }
+
                 if (col.gameObject.tag == "Ground")
                 {
                     onGround = true;
-                    return;
                 }
 
-                if (col.gameObject.tag == "Ice")
+                if (col.gameObject.name == "GetLife")
+                {
+                    if (GameManager.curPlayerType == PlayerType.Liquid)
+                        col.GetComponent<GetLifeScr>().showEvent();
+                }
+
+                if (col.gameObject.layer == LayerMask.NameToLayer("Ice"))
                 {
                     if (GameManager.curPlayerType == PlayerType.Ball)
                         ManagerEventCon.BroadCast(ProEventType.ChangeType, PlayerType.Ice);
                     return;
                 }
 
-                if (col.gameObject.tag == "Fire")
+                if (col.gameObject.layer == LayerMask.NameToLayer("Fire"))
                 {
                     if (GameManager.curPlayerType == PlayerType.Ice)
                         ManagerEventCon.BroadCast(ProEventType.ChangeType, PlayerType.Ball);
                     return;
-                }
+                }        
 
                 if (col.gameObject.tag == "Finish")
                 {
@@ -134,6 +172,11 @@ public class TestConBall1 : MonoBehaviour
                 }
             }
         }
+    }
+
+    public void Wait2()
+    {
+        isTongLock = false;
     }
 
     public void closeEvent()

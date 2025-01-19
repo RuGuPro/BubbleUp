@@ -5982,6 +5982,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   GameManager: {fileID: 0}
-  acceleration: 1.5
+  cameraTra: {fileID: 0}
+  acceleration: 10
   jumpPower: 5
   airControl: 0.2

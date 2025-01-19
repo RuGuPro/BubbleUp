@@ -8,6 +8,8 @@ TagManager:
   - Fire
   - Ground
   - Death
+  - ground
+  - Barrel
   layers:
   - Default
   - TransparentFX
@@ -15,9 +17,9 @@ TagManager:
   - 
   - Water
   - UI
-  - 
-  - 
-  - 
+  - Effect
+  - Ice
+  - Fire
   - 
   - 
   - 

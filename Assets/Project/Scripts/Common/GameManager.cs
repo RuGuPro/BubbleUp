@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public enum PlayerType
 {
@@ -24,6 +25,9 @@ public class GameManager : MonoBehaviour
     public Material TouMingMat;
     public Material BallMat;
     private bool isFinish = false;
+
+    private bool isLock = false;
+    public bool isFirst = true;
 
     private void Start()
     {
@@ -47,6 +51,9 @@ public class GameManager : MonoBehaviour
         {
             isFinish = true;
             Debug.Log("³É¹¦");
+            ManagerScr.Instance.SPanel.SetActive(true);
+            if (CanvasLevel1Scr.Instance)
+                CanvasLevel1Scr.Instance.show(-1);
         }
     }
 
@@ -56,11 +63,19 @@ public class GameManager : MonoBehaviour
         {
             isFinish = true;
             Debug.Log("Ê§°Ü");
+            ManagerScr.Instance.FPanel.SetActive(true);
+            if (CanvasLevel1Scr.Instance)
+                CanvasLevel1Scr.Instance.show(-1);
         }
     }
 
     public void CreatPlayer(PlayerType type)
     {
+        if (isLock)
+        {
+            return;
+        }
+
         StopAllCoroutines();
 
         switch (type)
@@ -80,7 +95,7 @@ public class GameManager : MonoBehaviour
 
                         player.GetComponent<ObiSoftbody>().deformationResistance = 1.0f;
                         player.GetComponent<TestConBall1>().closeEvent();
-                        player.GetComponent<TestConBall1>().ChangeForce(1.5f);
+                        player.GetComponent<TestConBall1>().ChangeForce(10.0f);
                         player.GetComponent<Renderer>().material = BallMat;
                     }
                     else if (curPlayerType == PlayerType.Ice)
@@ -110,6 +125,9 @@ public class GameManager : MonoBehaviour
                     }));
                 }
                 curPlayerType = PlayerType.Ball;
+                ManagerEventCon.BroadCast(ProEventType.SoundEffects, "×´Ì¬×ª»»");
+                isLock = true;
+                Invoke("LockOpen", 2.0f);
                 break;
             case PlayerType.Liquid:
                 if (curPlayerType == PlayerType.Liquid)
@@ -119,11 +137,14 @@ public class GameManager : MonoBehaviour
                 {
                     player.GetComponent<ObiSoftbody>().deformationResistance = 0.05f;
                     player.GetComponent<TestConBall1>().closeEvent();
-                    player.GetComponent<TestConBall1>().ChangeForce(4.0f);
+                    player.GetComponent<TestConBall1>().ChangeForce(12.0f);
 
                     curSolver.SetActive(true);
                     player.GetComponent<Renderer>().material = TouMingMat;
                     curPlayerType = PlayerType.Liquid;
+                    ManagerEventCon.BroadCast(ProEventType.SoundEffects, "×´Ì¬×ª»»");
+                    isLock = true;
+                    Invoke("LockOpen", 2.0f);
                 }
                 break;
             case PlayerType.Ice:
@@ -147,11 +168,19 @@ public class GameManager : MonoBehaviour
                         }));
                     }));
                     curPlayerType = PlayerType.Ice;
+                    ManagerEventCon.BroadCast(ProEventType.SoundEffects, "×´Ì¬×ª»»");
+                    isLock = true;
+                    Invoke("LockOpen", 2.0f);
                 }
                 break;
             default:
                 break;
         }
+    }
+
+    public void OtherLoadObj(string path, Transform parent, Action<GameObject> e)
+    {
+        StartCoroutine(LoadObj(path, parent, e));
     }
 
     IEnumerator LoadObj(string path, Transform parent, Action<GameObject> e)
@@ -197,7 +226,7 @@ public class GameManager : MonoBehaviour
     {
         if (player)
         {
-            Ray ray = new Ray(player.transform.position + new Vector3(0, 1, 0), Vector3.down);
+            Ray ray = new Ray(player.transform.position + new Vector3(0, 2, 0), Vector3.down);
             RaycastHit[] hitInfos;
             hitInfos = Physics.RaycastAll(ray, 10);
             for (int i = 0; i < hitInfos.Length; i++)
@@ -213,18 +242,19 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void LockOpen()
+    {
+        isLock = false;
+    }
+
     private void Update()
     {
         if (player)
         {
-            if (!isFinish)
+            if (isFinish)
             {
-                Camera.position = Vector3.Lerp(Camera.position, (player.transform.position + new Vector3(5, 5, -5)), 2.0f * Time.deltaTime);
+                Camera.GetComponent<MouseFollowRotation>().enabled = false;
             }
-        }
-        else
-        {
-            Camera.transform.position = startPos.transform.position + new Vector3(5, 5, -5);
         }
 
         if (Input.GetKeyDown(KeyCode.P) && curPlayerType == PlayerType.Ball)
@@ -237,16 +267,35 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void CreatChangeEffect()
+    public void CreatChangeEffect(string name)
     {
-        StartCoroutine(LoadObj("Effects/ChangeEffect", creatParent, (effect) =>
-        {
-            effect.transform.position = player.transform.position;
-        }));
+        StartCoroutine(LoadObj("Effects/" + name, creatParent, (effect) =>
+         {
+             effect.transform.position = player.transform.position;
+         }));
     }
 
     public void WaitTimeEvent(float time, GameObject obj, Action<GameObject> e)
     {
         StartCoroutine(WaitTime(time, obj, e));
+    }
+
+    public void ReTry()
+    {
+        //ManagerEventCon.BroadCast(ProEventType.Init);
+        //isFirst = true;
+        //isFinish = false;
+        //isLock = false;
+        //Destroy(player.gameObject);
+        //Camera.GetComponent<MouseFollowRotation>().enabled = true;
+        //Invoke("Wait", 0.5f);
+
+        LoadSceneManager.Instance.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    public void Wait()
+    {
+        curPlayerType = PlayerType.None;
+        CreatPlayer(PlayerType.Ball);
     }
 }

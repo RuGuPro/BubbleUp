@@ -1,14 +1,3 @@
-/*******************************************************************************
-* 版权声明：北京润尼尔网络科技有限公司，保留所有版权
-* 版本声明：v1.0.0
-* 项目名称：
-* 类 名 称：ManagerEventCon
-* 作者名称：齐博文
-* 功能描述：事件控制器
-* 修改记录：
-* 日期 描述：
-* 
-******************************************************************************/
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -16,13 +5,17 @@ using System;
 
 public enum ProEventType
 {
+    Init,
     Lan_CN,
     Lan_EN,
     Btn_Next,
     Btn_Home,
+    Btn_Back,
     ChangeType,
     FinishEvent,
-    DeathEvent
+    DeathEvent,
+    Btn_BackgroundMusic,
+    SoundEffects
 }
 
 public delegate void CallBack();
